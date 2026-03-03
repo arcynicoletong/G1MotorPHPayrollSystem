@@ -166,8 +166,8 @@ public class MotorPHPayrollSystem {
                                 break;
                             }
                         }
+                        reader.close();
                     } catch (Exception e) { System.out.println("Error accessing employee records."); }
-                    
                     if (!employeeFound) {
                         System.out.println("Employee number does not exist.");
                     }
@@ -223,6 +223,7 @@ public class MotorPHPayrollSystem {
                                     found = true; break;
                                 }
                             }
+                            reader.close();
                         } catch (Exception e) { System.out.println("Record access error."); }
                         if (!found) System.out.println("Employee number does not exist.");
                         else { finalizePayrollProcess(); }
@@ -233,6 +234,7 @@ public class MotorPHPayrollSystem {
                                 executePayrollLogic(row.split(","), attFile, timeFormat);
                             }
                             finalizePayrollProcess();
+                            reader.close();
                         } catch (Exception e) { System.out.println("Record access error."); }
                     } else if (subChoice.equals("3")) {
                         terminateSession();
@@ -271,7 +273,8 @@ public class MotorPHPayrollSystem {
                         else cutoffTwoHours += dailyHours;
                     }
                 }
-            } catch (Exception e) { continue; }
+                attReader.close(); 
+           } catch (Exception e) { continue; }
 
             String monthName = switch (month) { case 6->"June"; case 7->"July"; case 8->"August"; case 9->"September"; case 10->"October"; case 11->"November"; case 12->"December"; default->""; };
             double grossOne = cutoffOneHours * hourlyRate, grossTwo = cutoffTwoHours * hourlyRate, monthlyGross = grossOne + grossTwo;
