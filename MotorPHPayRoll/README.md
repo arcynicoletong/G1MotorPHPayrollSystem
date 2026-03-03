@@ -498,4 +498,57 @@ Why essential: It displays and follows rules, and clearly shows that all deducti
         password: 12345 
 3. Follow the on‑screen menu.
 
+# MotorPH Basic Payroll System
 
+##  Project Overview
+This program computes employee payroll using a structured method-based approach. 
+It reads employee data from a CSV file and calculates gross pay, deductions, and net pay.
+`MotorPH_Employee Data - Employee Details.csv`
+
+---
+
+##  Features
+- Reads employee data from CSV file
+- Computes worked hours
+- Calculates SSS, PhilHealth, PAG-IBIG
+- Computes withholding tax
+- Calculates total deductions
+- Displays computed net pay
+- Handles Employee and Staff sessions
+
+---
+
+##  How It Works
+1. The system reads employee data from:
+   MotorPH_Employee Data - Employee Details.csv
+2. The program parses and stores employee information.
+3. It computes worked hours and unpaid lunch deductions.
+4. Government contributions and tax are calculated.
+5. The final payroll (Gross Pay - Deductions = Net Pay) is displayed.
+
+---
+
+##  Methods Structure
+**METHOD 1:** Display Employee Information  
+**METHOD 2:** Data Parsing  
+**METHOD 3:** Worked Hours Computation  
+**METHOD 4:** Unpaid Lunch Overlap Calculation  
+**METHOD 5:** SSS Calculation  
+**METHOD 6:** PhilHealth Calculation  
+**METHOD 7:** PAG-IBIG Calculation  
+**METHOD 8:** Withholding Tax Calculation  
+**METHOD 9:** Employee Session Handler  
+**METHOD 10:** Staff Session Handler  
+**METHOD 11:** Payroll Calculator  
+**METHOD 12:** Main Method  
+---
+## Commit
+Add explanation of program logic and list of methods
+
+##  File Structure
+
+MotorPHPayRoll/
+│
+├── MotorPH_Employee Data - Employee Details.csv  
+├── PayrollSystem.java  
+└── README.md
