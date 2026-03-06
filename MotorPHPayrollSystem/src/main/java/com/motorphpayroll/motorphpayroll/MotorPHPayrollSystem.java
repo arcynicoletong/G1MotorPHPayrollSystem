@@ -14,7 +14,8 @@ import java.util.Scanner;
  * @author H1101_Group 1
  * 
  * This program handles profile viewing and payroll processing for MotorPH
- * payroll staff and employees.
+ * payroll staff and employees. For the detailed block-by-block explanation,
+ * please refer to our README file.
  */
 public class MotorPHPayrollSystem {
 
@@ -49,34 +50,25 @@ public class MotorPHPayrollSystem {
     */
     static double computeHours(LocalTime loginTime, LocalTime logoutTime) {
         if (loginTime == null || logoutTime == null) return 0.0;
-
+	
         LocalTime standardStart = LocalTime.of(8, 0);
         LocalTime standardEnd   = LocalTime.of(17, 0);
-
         LocalTime effectiveLogout = logoutTime.isAfter(standardEnd) ? standardEnd : logoutTime;
+
         LocalTime gracePeriodLimit = LocalTime.of(8, 10);
         LocalTime effectiveLogin = loginTime.isBefore(standardStart) ? standardStart : loginTime;
-        
-        if (!loginTime.isAfter(gracePeriodLimit)) {
-            effectiveLogin = standardStart;
-        }
-
-        if (!effectiveLogout.isAfter(effectiveLogin)) return 0.0;
-
-        double totalMinutes = Duration.between(effectiveLogin, effectiveLogout).toMinutes();
-
-        LocalTime lunchStart = LocalTime.of(12, 0);
-        LocalTime lunchEnd   = LocalTime.of(13, 0);
-        double lunchMinutes = calculateOverlap(effectiveLogin, effectiveLogout, lunchStart, lunchEnd);
-
-        double netWorkedMinutes = totalMinutes - lunchMinutes;
-        return Math.max(0.0, netWorkedMinutes / 60.0);
+        if (!loginTime.isAfter(gracePeriodLimit)) {effectiveLogin = standardStart;}
+	
+        double lunchMinutes = calculateOverlap(effectiveLogin, effectiveLogout, LocalTime.of(12, 0), LocalTime.of(13, 0));
+	
+        return (Duration.between(effectiveLogin, effectiveLogout).toMinutes() - lunchMinutes) / 60.0;
     }
+
 
     /* --------------- METHOD 4: UNPAID LUNCH OVERLAP CALCULATION --------------
      * This method determines the number of minutes where two (2) time intervals 
-     * overlap (i.e. the whole day worked hours and the 1-hour unpaid lunch). 
-     * Our team used this method to avoid improper time deduction.
+     * (i.e. the whole day worked hours and the 1-hour unpaid lunch)overlap. 
+     * Our team used this method to avoid improper 1-hour time deduction.
     */
     static double calculateOverlap(LocalTime startA, LocalTime endA, LocalTime startB, LocalTime endB) {
         LocalTime maxStart = startA.isAfter(startB) ? startA : startB;
@@ -110,7 +102,7 @@ public class MotorPHPayrollSystem {
     }
 
     /* ---------------- METHOD 6: PHILHEALTH CALCULATION -----------------------
-     * Calculates the PhilHealth premium share for the employee.
+     * This method calculates the PhilHealth premium share for an employee.
      * Applies a 3% premium rate with a minimum cap of 300 and a maximum of 1800.
     */
     static double computePhilHealth(double monthlyGross) {
@@ -122,14 +114,30 @@ public class MotorPHPayrollSystem {
     }
 
     /* ---------------- METHOD 7: PAG-IBIG CALCULATION ------------------------
-     * Calculates the Pag-IBIG contribution for the employee.
+     * This method calculates the Pag-IBIG contribution for the employee.
      * Applies tiered rates based on income level and caps at 100 pesos.
     */
     static double computePagIbig(double monthlyGross) {
-        if (monthlyGross <= 0) return 0.0;
-        double contributionRate = (monthlyGross <= 1500) ? 0.01 : 0.02;
-        double calculatedShare = monthlyGross * contributionRate;
-        return Math.min(calculatedShare, 100.0);
+
+            if (monthlyGross <= 0) {
+                    return 0.0;
+            }
+
+            double contributionRate;
+
+            if (monthlyGross <= 1500) {
+                     contributionRate = 0.01;
+            } else {
+                contributionRate = 0.02;
+            }
+
+            double calculatedShare = monthlyGross * contributionRate;
+
+            if (calculatedShare > 100.0) {
+                return 100.0;
+            } else {
+            return calculatedShare;
+            }
     }
 
     /* ---------------- METHOD 8: WITHHOLDING TAX CALCULATION ------------------
@@ -146,7 +154,7 @@ public class MotorPHPayrollSystem {
     }
 
     /* ---------------- METHOD 9: EMPLOYEE SESSION HANDLER ------------------------
-     * Manages the interactive menu for users with the "employee" role.
+     * This method manages the interactive menu for users with the "employee" role.
      * Handles profile retrieval and secure logout procedures.
     */
     static void handleEmployeeSession(Scanner scanner, String employeeFilePath) {
@@ -201,7 +209,7 @@ public class MotorPHPayrollSystem {
     }
 
     /* -------------- METHOD 10: PAYROLL STAFF SESSION HANDLER -----------------
-     * Manages the interactive menu for users with the "payroll_staff" role.
+     * This method manages the interactive menu for users with the "payroll_staff" role.
      * Provides processing options for single or bulk employee payroll.
     */
     static void handleStaffSession(Scanner scanner, String empFile, String attFile, DateTimeFormatter timeFormat) {
@@ -261,10 +269,10 @@ public class MotorPHPayrollSystem {
         }
     }
 
-
     /* ------------------ METHOD 11: PAYROLL CALCULATOR ------------------------
-     * Executes the mathematical processing of employee earnings.
-     * Iterates through available 2024 records to generate monthly salary reports.
+     * This method executes the mathematical processing of employee earnings.
+     * It connects the attendance records with all the previous math methods 
+     * (i.e. the calculators for SSS, PhilHealth, Pag-IBIG, and Tax)
     */
     static void executePayrollLogic(String[] employeeInfo, String attendanceFile, DateTimeFormatter timeFormat) {
         String empId = employeeInfo[0];
@@ -297,22 +305,29 @@ public class MotorPHPayrollSystem {
             double totalDeductions = sss + philhealth + pagibig + tax;
 
             System.out.println("\nCutoff Date: " + monthName + " 1 to 15\nTotal Hours: " + cutoffOneHours + " hours" + "\nGross Salary: PHP " + grossOne + "\nNet Salary: PHP " + grossOne);
-            System.out.println("\nCutoff Date: " + monthName + " 16 to " + YearMonth.of(2024, month).lengthOfMonth() + "\nTotal Hours: " + cutoffTwoHours + "hours" + "\nGross Salary: PHP " + grossTwo + "\nEach Deduction:\n    SSS: PHP " + sss + "\n    PhilHealth: PHP " + philhealth + "\n    Pag-IBIG: PHP "  + pagibig + "\n    Tax: PHP " + tax + "\nTotal Deductions: PHP " + totalDeductions + "\nNet Salary: PHP " + (grossTwo - totalDeductions));
+            System.out.println("\nCutoff Date: " + monthName + " 16 to " + YearMonth.of(2024, month).lengthOfMonth() + "\nTotal Hours: " + cutoffTwoHours + " hours" + "\nGross Salary: PHP " + grossTwo + "\nEach Deduction:\n    SSS: PHP " + sss + "\n    PhilHealth: PHP " + philhealth + "\n    Pag-IBIG: PHP "  + pagibig + "\n    Tax: PHP " + tax + "\nTotal Deductions: PHP " + totalDeductions + "\nNet Salary: PHP " + (grossTwo - totalDeductions));
         }
         System.out.println("===================================");
     }
 
-    // Additional methods, we only call them in the prior methods to print message.
+    /* ------------------- METHOD 12: TERMINATE SESSION ------------------------
+     * This method simply terminates the prorgam but the team decided to turn it
+     * into its own method to print a short message and make it reusable.
+    */
     static void terminateSession() {
-        System.out.println("\nClosing the program . . .");
+	System.out.println("\nClosing the program . . .");
     }
 
+    /* -------------------- METHOD 13: FINALIZE PAYROLL ------------------------
+     * This method prints a short message to inform the user that the payroll 
+     * processing is successful. It is also designed to be a reusable method.
+    */    
     static void finalizePayrollProcess() {
-        System.out.println("Payroll processing is successful!");
-        System.out.print("\nProcess another payroll. ");
+	System.out.println("Payroll processing is successful!");
+	System.out.print("\nProcess another payroll. ");
     }
 
-    /* --------------------- METHOD 12: MAIN METHOD ---------------------------
+    /* --------------------- METHOD 14: MAIN METHOD ---------------------------
      * The main method is the program's entry point which initializes file paths, 
      * handles the login authentication, and routes the user to the appropriate 
      * session handler based on their credentials.
@@ -353,4 +368,3 @@ public class MotorPHPayrollSystem {
         }
     }
 }
-
