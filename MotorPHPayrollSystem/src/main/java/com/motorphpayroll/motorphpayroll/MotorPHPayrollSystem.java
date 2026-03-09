@@ -35,7 +35,7 @@ public class MotorPHPayrollSystem {
             }
             reader.close();
         } catch (Exception e) {
-            System.out.println("An error occurred while reading the file (" + filename + "): + e");
+            System.out.println("An error occurred while reading the file (" + filename + "): " + e);
         }
     }
     
