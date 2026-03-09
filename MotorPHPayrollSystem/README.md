@@ -93,20 +93,21 @@ Payroll output includes:
 
 The team coded the program in a highly organized manner. It follows the common project standard where all the definitive and declarative methods come before the main method. The program is divided and sequenced into the following methods:
 
-1. Display Employee Information  
-2. Data Parsing  
-3. Worked Hours Computation  
-4. Unpaid Lunch Overlap Calculation  
-5. SSS Calculation  
-6. PhilHealth Calculation  
-7. Pag-IBIG Calculation  
-8. Withholding Tax Calculation  
-9. Employee Session Handler  
-10. Payroll Staff Session Handler  
-11. Payroll Calculator  
-12. Terminate Session  
-13. Finalize Payroll  
-14. Main Method  
+1. File Reader
+2. Display Employee Information  
+3. Data Parsing  
+4. Worked Hours Computation  
+5. Unpaid Lunch Overlap Calculation  
+6. SSS Calculation  
+7. PhilHealth Calculation  
+8. Pag-IBIG Calculation  
+9. Withholding Tax Calculation  
+10. Employee Session Handler  
+11. Payroll Staff Session Handler  
+12. Payroll Calculator  
+13. Terminate Session  
+14. Finalize Payroll  
+15. Main Method  
 
 ---
 
@@ -218,7 +219,7 @@ static double computeHours(LocalTime loginTime, LocalTime logoutTime) {
     if (!loginTime.isAfter(gracePeriodLimit)) { effectiveLogin = standardStart; }
 
     // This block finds the total minutes between start and end, then calls 
-    // Method 4 to see how much of that time was spent during lunch break.    	
+    // Method 5 to see how much of that time was spent during lunch break.    	
     double lunchMinutes = calculateOverlap(effectiveLogin, logoutTime, LocalTime.of(12, 0), LocalTime.of(13, 0));
     
     // We subtract the unpaid lunch, then divide by 60 to get decimal hours.    	
@@ -411,6 +412,11 @@ This method manages the interactive menu for users with the "employee" role. It 
 
 ```java
 static void handleEmployeeSession(Scanner scanner, String employeeFilePath) {
+	// This is where the employee information read from the Employee Details CSV file are stored.
+	ArrayList<String[]> employeeInformation = new ArrayList<>();
+
+	// This reads the Employee Details CSV file and stores the data in the ArrayList of String arrays called employeeInformation.
+    readFile(employeeFilePath,employeeInformation);
     
 	// These flags keep the menu running and track if the user already saw their info.
 	boolean sessionActive = true;
@@ -432,18 +438,12 @@ static void handleEmployeeSession(Scanner scanner, String employeeFilePath) {
 				String targetId = scanner.nextLine().trim();
 				boolean employeeFound = false;
 
-				// We open the CSV file to search for the specific employee ID.
-				try (BufferedReader reader = new BufferedReader(new FileReader(employeeFilePath))) {
-					reader.readLine(); // We skip the header row of the CSV.
-					String row;
-                    
-					// We read the file line by line to find a match.
-                    while ((row = reader.readLine()) != null) {
-	                    String[] dataFields = row.split(",");
+				// We go through the ArrayList of String arrays with the contents of the CSV file to search for the specific employee ID.
+				for (String[] employee : employeeInformation) {
                         
-                        // If the ID matches, we call Method 1 to show the profile.
-                        if (dataFields[0].equals(targetId)) {
-                            displayProfileHeader(dataFields);
+                        // If the ID matches, we call Method 2 to show the profile.
+                        if (employee[0].equals(targetId)) {
+                            displayProfileHeader(employee);
                             System.out.println("===================================");
                             System.out.println("Request to view employee information is successful.");
                             employeeFound = true;
@@ -451,22 +451,14 @@ static void handleEmployeeSession(Scanner scanner, String employeeFilePath) {
                             break;
 						}
 					}
-					reader.close();
-
-				} catch (Exception e) { 
-					System.out.println("Error accessing employee records."); 
-				}
-
 				if (!employeeFound) {
 					System.out.println("Employee number does not exist.");
 				}
-                
 			} else if (menuSelection.equals("2")) {
                	// This triggers the logout message and breaks the loop.
                	terminateSession();
 				sessionActive = false;
-            }
-		} else {
+            } else {
 			// Once information is viewed, we only show the 'Exit' option.
             System.out.println("[1] Exit the program");
             System.out.print("Enter option: ");
@@ -488,6 +480,16 @@ This method manages the interactive menu for users with the "payroll_staff" role
 
 ```java
 static void handleStaffSession(Scanner scanner, String empFile, String attFile, DateTimeFormatter timeFormat) {
+	// This is where the employee information read from the Employee Details CSV file are stored. 
+	ArrayList<String[]> employeeInformation = new ArrayList<>();
+	// This reads the Employee Details CSV file and stores the data in the ArrayList of String arrays called employeeInformation.
+	readFile(empFile,employeeInformation);
+
+	// This is where the attendance information read from the Attendance Record CSV file are stored.    
+	ArrayList<String[]> attendanceInformation = new ArrayList<>();
+	// This reads the Attendance Record CSV file and stores the data in the ArrayList of String arrays called attendanceInformation.
+	readFile(attFile,attendanceInformation);
+
 	boolean sessionActive = true;
     
 	// The main loop keeps the staff member logged in until they choose 'Exit'.
@@ -516,35 +518,25 @@ static void handleStaffSession(Scanner scanner, String empFile, String attFile, 
                     	System.out.print("Enter Employee #: ");
                     	String id = scanner.nextLine().trim();
 						boolean found = false;
-						try (BufferedReader reader = new BufferedReader(new FileReader(empFile))) {
-                        	reader.readLine(); // Skip header
-                        	String row;
-                        	while ((row = reader.readLine()) != null) {
-								String[] data = row.split(",");
-								if (data[0].equals(id)) {
-                                	// Once found, we call Method 11 to handle the math.
-                                	executePayrollLogic(data, attFile, timeFormat);
-                                	found = true; break;
-								}
-                        	}
-                    	} catch (Exception e) { System.out.println("Record access error."); }
-                    
-                    	if (!found) System.out.println("Employee number does not exist.");
+						for (String[] employee : employeeInformation) {
+                            if (employee[0].equals(id)) {
+								// Once found, we call Method 12 to handle the math.
+                                executePayrollLogic(employee, attendanceInformation, timeFormat);
+                                found = true; break;
+                            }
+                        }
+                        if (!found) System.out.println("Employee number does not exist.");
                     	else { finalizePayrollProcess(); } // Show success message
                 	} 
                 
-					// OPTION 2: Process payroll for All employee.
+					// OPTION 2: Process payroll for all employees.
                 	else if (subChoice.equals("2")) {
-                    	try (BufferedReader reader = new BufferedReader(new FileReader(empFile))) {
-                        	reader.readLine(); String row;
-
-                        	// Instead of searching, we just loop through every single row in the CSV.
-                        	while ((row = reader.readLine()) != null) {
-                            	executePayrollLogic(row.split(","), attFile, timeFormat);
-                        	}
-                        	finalizePayrollProcess();
-                    	} catch (Exception e) { System.out.println("Record access error."); }
-                	} 
+                    	for (String[] employee : employeeInformation) {
+								// Instead of searching, we just loop through every single row in the CSV.
+                                executePayrollLogic(employee, attendanceInformation, timeFormat);
+                        }
+						finalizePayrollProcess();
+					}
                 
 					// OPTION 3: Exit the program.
                 	else if (subChoice.equals("3")) {
@@ -574,7 +566,7 @@ static void executePayrollLogic(String[] employeeInfo, String attendanceFile, Da
 	String empId = employeeInfo[0];
     double hourlyRate = tryParseDouble(employeeInfo[employeeInfo.length - 1]);
     
-   	// We display the header (Method 1) so we know exactly whose salary we are looking at.
+   	// We display the header (Method 2) so we know exactly whose salary we are looking at.
     displayProfileHeader(employeeInfo);
     System.out.println("---------------------------------");
     System.out.println("EMPLOYEE SALARY");
@@ -583,30 +575,25 @@ static void executePayrollLogic(String[] employeeInfo, String attendanceFile, Da
      * It calculates the pay for every month in that range. */
    	for (int month = 6; month <= 12; month++) {
 		double cutoffOneHours = 0.0, cutoffTwoHours = 0.0;
-        
-        // We open the Attendance CSV to find every login/logout for this specific employee.
-        try (BufferedReader attReader = new BufferedReader(new FileReader(attendanceFile))) {
-        	attReader.readLine(); // Skip header
-            String row;
-            while ((row = attReader.readLine()) != null) {
-            	String[] attData = row.split(",");
-                
-                // If the attendance row doesn't belong to this employee, we skip it.
-                if (!attData[0].equals(empId)) continue;
-                
-                String[] dateParts = attData[3].split("/"); // Breaking down MM/DD/YYYY
-                
-                // We only count records for the year 2024 and the current month in the loop.
-                if (Integer.parseInt(dateParts[2]) == 2024 && Integer.parseInt(dateParts[0]) == month) {
-                	// Call Method 3 to calculate hours for this specific day.
-                    double dailyHours = computeHours(LocalTime.parse(attData[4], timeFormat), LocalTime.parse(attData[5], timeFormat));
-                    
-                    // Split the hours into 1st Cutoff (1-15) or 2nd Cutoff (16-End).
-                    if (Integer.parseInt(dateParts[1]) <= 15) cutoffOneHours += dailyHours; 
-                    else cutoffTwoHours += dailyHours;
-				}
-            }
-        } catch (Exception e) { continue; }
+
+		// We search through the ArrayList called attendanceRecord to find every login/logout for this specific employee.
+		for (String[] attendanceRecord : attendanceFile) {
+
+			// If the attendance row doesn't belong to this employee, we skip it.
+			if (!attendanceRecord[0].equals(empId)) continue;
+			String[] dateParts = attendanceRecord[3].split("/");
+
+			// We only count records for the year 2024 and the current month in the loop.
+			if (Integer.parseInt(dateParts[2]) == 2024 && Integer.parseInt(dateParts[0]) == month) {
+
+				// Call Method 4 to calculate hours for this specific day.
+				double dailyHours = computeHours(LocalTime.parse(attendanceRecord[4], timeFormat), LocalTime.parse(attendanceRecord[5], timeFormat));
+
+				// Split the hours into 1st Cutoff (1-15) or 2nd Cutoff (16-End).
+				if (Integer.parseInt(dateParts[1]) <= 15) cutoffOneHours += dailyHours; 
+				else cutoffTwoHours += dailyHours;
+			}
+		}
 
 		// Logic for converting the month number into a readable name (e.g., 6 -> June).
         String monthName = switch (month) { case 6->"June"; case 7->"July"; case 8->"August"; case 9->"September"; case 10->"October"; case 11->"November"; case 12->"December"; default->""; };
@@ -616,7 +603,7 @@ static void executePayrollLogic(String[] employeeInfo, String attendanceFile, Da
         double grossTwo = cutoffTwoHours * hourlyRate;
         double monthlyGross = grossOne + grossTwo;
 
-        // We call Methods 5, 6, 7, and 8 to get the statutory deductions based on total monthly income.
+        // We call Methods 6, 7, 8, and 9 to get the statutory deductions based on total monthly income.
         double sss = computeSSS(monthlyGross);
         double philhealth = computePhilHealth(monthlyGross);
         double pagibig = computePagIbig(monthlyGross);
@@ -728,6 +715,7 @@ The data files are in CSV format and must be placed inside the Resources folder.
 The team have had many challenges in aligning their schedules and learning paces together, but remained as one to meet the MotorPH's project deadline. Below is the latest project plan of the team, updated as of March 05, 2022.
 
 Project Plan link: https://docs.google.com/spreadsheets/d/1Lux9k8_aYuvp0zqG6S2VvVciuUxU-RZNWELsfzmeJYs/edit?usp=drive_link
+
 
 
 
