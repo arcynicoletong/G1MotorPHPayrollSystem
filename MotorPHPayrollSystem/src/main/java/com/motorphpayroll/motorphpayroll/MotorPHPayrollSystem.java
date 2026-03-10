@@ -21,7 +21,7 @@ import java.util.Scanner;
 public class MotorPHPayrollSystem {
 
  /* ========================= Small Helper Utilities =========================
-       These helpers reduce repetition.	
+       These helpers reduce code repetition.	
  */
     static String getMonthName(int monthNumber) {
         // Get month name by number (easy to read)
@@ -130,7 +130,7 @@ public class MotorPHPayrollSystem {
     }
 
     /* -------------------- METHOD 6: SSS CALCULATION --------------------------
-     * This methdod computes the monthly SSS contribution based on gross salary.
+     * This method computes the monthly SSS contribution based on gross salary.
      * It utilizes the bracketed contribution table and enforces a maximum cap.
     */
     static double computeSSS(double monthlyGross) {
@@ -168,7 +168,7 @@ public class MotorPHPayrollSystem {
 	 * PURPOSE:
 	 - Compute Pag-IBIG (employee share) from monthly gross with a simple tier and cap.
 	 * HOW:
-	 - 0 if grosss < ₱1,000; 1% if ₱1,000 ≤ gross ≤ ₱1,500; otherwise 2%; then cap at ₱100.
+	 - 0 if gross < ₱1,000; 1% if ₱1,000 ≤ gross ≤ ₱1,500; otherwise 2%; then cap at ₱100.
 	 * WHY:
 	 - Tier supports lower-income employees; cap prevents overly large shares.
     */
