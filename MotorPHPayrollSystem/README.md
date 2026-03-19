@@ -258,7 +258,7 @@ static double calculateOverlap(LocalTime startA, LocalTime endA, LocalTime start
 
 ---
 
-### Method 6: SSS Calculation  
+### Method 6: SSS Calculation 
 This method computes the monthly SSS contribution based on gross salary. It utilizes the bracketed contribution table and enforces a maximum cap.
 
 ```java
