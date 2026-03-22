@@ -43,8 +43,8 @@ public class MotorPHPayrollSystem {
             BufferedReader reader = new BufferedReader(new FileReader(filename));
             reader.readLine();
             while ((row = reader.readLine()) != null) {
-                String[] dataFields = row.split(",");
-                data.add(dataFields);
+                String[] csvFields = row.split(",");
+                data.add(csvFields);
             }
             reader.close();
         } catch (Exception e) {
@@ -86,22 +86,11 @@ public class MotorPHPayrollSystem {
 }
 
     /* ---------------- METHOD 4: WORKED HOURS COMPUTATION ---------------------
-     * This method calculates the total hours worked by an employee during a shift.
-     * It strictly counts time between 8:00 AM and 5:00 PM and applies a 10-minute 
-     grace period. Logins before 8:11 AM are treated as 8:00 AM as instructed.
-	 * PURPOSE:
-	 - Compute hours worked for a single day.
-	 - This method calculates the total payable working hours of an employee.
-	 - It enforces MotorPH's attendance policy where working hours are only
-	 counted between 8:00 AM and 5:00 PM.
-	 * RULES:
-	 - A 10-minute grace period is applied to prevent penalizing employees
-	 for very small delays during login.
-	 - Count ONLY within 08:00–17:00 (no overtime counted).
-	 - 10-minute grace period: arriving up to 8:10 counts as 8:00.
-	 * WHY:
-	 - Matches rule "8:05 in and 5:00 out = 8 hours" (no late penalty).
-	 - Exclude unpaid lunch (12:00–13:00) that overlaps the worked window.
+     * This method calculates the payable hours worked by an employee
+     * strictly from 8:00 AM to 5:00 PM with a 10-minute grace period.
+     * WHY:
+     - It matches the rule "8:05 in and 5:00 out = 8 hours" (no late penalty).
+     - It excludes unpaid lunch (12:00–13:00) that overlaps with the worked window.
     */
     static double computeHours(LocalTime loginTime, LocalTime logoutTime) {
         if (loginTime == null || logoutTime == null) return 0.0;
@@ -149,9 +138,9 @@ public class MotorPHPayrollSystem {
         double incrementPerStep = 22.50;
         double maximumContribution = 1125.00;
 
-        double difference = monthlyGross - baseLowerBound;
-        int bracketsEarned = (int) Math.floor(difference / bracketStep);
-        double totalContribution = baseContribution + (bracketsEarned * incrementPerStep);
+        double excessOverBase = monthlyGross - baseLowerBound;
+        int bracketCount = (int) Math.floor(excessOverBase / bracketStep);
+        double totalContribution = baseContribution + (bracketCount * incrementPerStep);
 
         return Math.min(totalContribution, maximumContribution);
     }
@@ -209,7 +198,6 @@ public class MotorPHPayrollSystem {
      * Handles profile retrieval and secure logout procedures.
      * PURPOSE:
      * Menu for "employee": view own profile or exit.
-     * Correctness: exact labels/prompt per Process Flow.
     */
     static void handleEmployeeSession(Scanner scanner, String employeeFilePath) {
         ArrayList<String[]> employeeInformation = new ArrayList<>();
@@ -329,11 +317,10 @@ public class MotorPHPayrollSystem {
      * This method executes the mathematical processing of employee earnings.
      * It connects the attendance records with all the previous math methods 
       (i.e. the calculators for SSS, PhilHealth, Pag-IBIG, and Tax)
-	 * PURPOSE:
-	 - Connect attendance (daily hours) with contribution calculators to get gross, deductions, and net for each cutoff (June-December).
-	 * WHY:
-	 - Add 1st and 2nd cutoff amounts first, then compute deductions on the combined amount.
-	 - No rounding of values.
+     * PURPOSE:
+     - Connects attendance (daily hours) with contribution calculators to get gross, deductions, and net for each cutoff (June-December).
+     * WHY:
+     - Adds 1st and 2nd cutoff amounts first, then compute deductions on the combined amount.
     */
     static void executePayrollLogic(String[] employeeInfo, ArrayList<String[]> attendanceFile, DateTimeFormatter timeFormat) {
         String empId = employeeInfo[0];
@@ -342,37 +329,62 @@ public class MotorPHPayrollSystem {
         System.out.println("---------------------------------");
         System.out.println("EMPLOYEE SALARY");
 
-        for (int month = 6; month <= 12; month++) {
-            double cutoffOneHours = 0.0, cutoffTwoHours = 0.0;
-            for (String[] attendanceRecord : attendanceFile) {
-                if (!attendanceRecord[0].equals(empId)) continue;
-                String[] dateParts = attendanceRecord[3].split("/");
-                if (Integer.parseInt(dateParts[2]) == 2024 && Integer.parseInt(dateParts[0]) == month) {
-                    double dailyHours = computeHours(LocalTime.parse(attendanceRecord[4], timeFormat), LocalTime.parse(attendanceRecord[5], timeFormat));
-                    if (Integer.parseInt(dateParts[1]) <= 15) cutoffOneHours += dailyHours; 
-                    else cutoffTwoHours += dailyHours;
+        // This determines the earliest year found in the attendance records.
+        int payrollYear = java.time.LocalDate.now().getYear();
+        for (String[] record : attendanceFile) {
+            if (!record[0].equals(empId)) continue;
+            String[] dateParts = record[3].split("/");
+            if (dateParts.length == 3) {
+                try {
+                    int recordYear = Integer.parseInt(dateParts[2]);
+                    if (recordYear < payrollYear) {
+                        payrollYear = recordYear;
+                    }
+                } catch (NumberFormatException e){}
+            }
+        }
+            
+        int currentYear = java.time.LocalDate.now().getYear();
+        boolean monthExists;
+        
+        for (; payrollYear <= currentYear; payrollYear++) {
+            for (int month = 1; month <= 12; month++) {
+                monthExists = false;
+                double cutoffOneHours = 0.0, cutoffTwoHours = 0.0;
+                for (String[] attendanceRecord : attendanceFile) {
+                    if (!attendanceRecord[0].equals(empId)) continue;
+                    String[] dateParts = attendanceRecord[3].split("/");
+                    if (Integer.parseInt(dateParts[2]) == payrollYear && Integer.parseInt(dateParts[0]) == month) {
+                        monthExists = true;
+                        double dailyHours = computeHours(LocalTime.parse(attendanceRecord[4], timeFormat), LocalTime.parse(attendanceRecord[5], timeFormat));
+                        if (Integer.parseInt(dateParts[1]) <= 15) cutoffOneHours += dailyHours; 
+                        else cutoffTwoHours += dailyHours;
+                    }
+                }
+
+                String monthName = getMonthName(month);
+                double grossOne = cutoffOneHours * hourlyRate, grossTwo = cutoffTwoHours * hourlyRate, monthlyGross = grossOne + grossTwo;
+                double sss = computeSSS(monthlyGross), philhealth = computePhilHealth(monthlyGross), pagibig = computePagIbig(monthlyGross);
+                double tax = computeWithholdingTax(Math.max(0, monthlyGross - (sss + philhealth + pagibig)));
+                double totalDeductions = sss + philhealth + pagibig + tax;
+                
+                if (monthExists) {
+                    System.out.println("\nCutoff Date: " + monthName + " 1 to 15 " + payrollYear + "\nTotal Hours: " + cutoffOneHours + " hours" + "\nGross Salary: PHP " + grossOne + "\nNet Salary: PHP " + grossOne);
+                    System.out.println("\nCutoff Date: " + monthName + " 16 to " + YearMonth.of(payrollYear, month).lengthOfMonth() + " " + payrollYear  + "\nTotal Hours: " + cutoffTwoHours + " hours" + "\nGross Salary: PHP " + grossTwo + "\nEach Deduction:\n    SSS: PHP " + sss + "\n    PhilHealth: PHP " + philhealth + "\n    Pag-IBIG: PHP "  + pagibig + "\n    Tax: PHP " + tax + "\nTotal Deductions: PHP " + totalDeductions + "\nNet Salary: PHP " + (grossTwo - totalDeductions));
                 }
             }
-            
-            String monthName = switch (month) { case 6->"June"; case 7->"July"; case 8->"August"; case 9->"September"; case 10->"October"; case 11->"November"; case 12->"December"; default->""; };
-            double grossOne = cutoffOneHours * hourlyRate, grossTwo = cutoffTwoHours * hourlyRate, monthlyGross = grossOne + grossTwo;
-            double sss = computeSSS(monthlyGross), philhealth = computePhilHealth(monthlyGross), pagibig = computePagIbig(monthlyGross);
-            double tax = computeWithholdingTax(Math.max(0, monthlyGross - (sss + philhealth + pagibig)));
-            double totalDeductions = sss + philhealth + pagibig + tax;
-
-            System.out.println("\nCutoff Date: " + monthName + " 1 to 15\nTotal Hours: " + cutoffOneHours + " hours" + "\nGross Salary: PHP " + grossOne + "\nNet Salary: PHP " + grossOne);
-            System.out.println("\nCutoff Date: " + monthName + " 16 to " + YearMonth.of(2024, month).lengthOfMonth() + "\nTotal Hours: " + cutoffTwoHours + " hours" + "\nGross Salary: PHP " + grossTwo + "\nEach Deduction:\n    SSS: PHP " + sss + "\n    PhilHealth: PHP " + philhealth + "\n    Pag-IBIG: PHP "  + pagibig + "\n    Tax: PHP " + tax + "\nTotal Deductions: PHP " + totalDeductions + "\nNet Salary: PHP " + (grossTwo - totalDeductions));
         }
         System.out.println("===================================");
     }
 
     /* ------------------- METHOD 13: TERMINATE SESSION ------------------------
-      * This method simply terminates the program but the team decided to turn it
+     * This method simply terminates the program but the team decided to turn it
      * into its own method to print a short message and make it reusable.
      * PURPOSE: End program gracefully.
     */
     static void terminateSession() {
-	System.out.println("\nClosing the program . . .");
+		System.out.println("\nClosing the program . . .");
+		System.exit(0);
     }
 
     /* -------------------- METHOD 14: FINALIZE PAYROLL ------------------------
@@ -436,5 +448,7 @@ public class MotorPHPayrollSystem {
         } else {
             handleStaffSession(inputScanner, employeeDetailsPath, attendanceRecordsPath, hourFormat);
         }
+
+		inputScanner.close();
     }
 }
