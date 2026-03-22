@@ -17,7 +17,7 @@ This program handles profile viewing for MotorPH employees and payroll processin
 
 ## What This Program Does
 
-The program is designed to receive user input, read data from the source CSV files, and display information based on the user’s request/input. Once the program is run, it will show a simple header displaying the company’s name:
+The program is designed to receive user input, read data from the source CSV files, and display information based on the user’s input. Once the program is run, it will show a simple header displaying the company’s name:
 
 ```
 ===================================
@@ -97,7 +97,7 @@ Payroll output includes:
 
 The team coded the program in a highly organized manner. It follows the common project standard where all the definitive and declarative methods come before the main method. The program is divided and sequenced into the following methods:
 
-0. Helper: Ger Month Name
+0. Helper: Get Month Name
 1. File Reader
 2. Display Employee Information  
 3. Data Parsing  
@@ -304,7 +304,7 @@ static double computeSSS(double monthlyGross) {
     
     // We divide that difference (excessOverBase) by 500 to see how many "steps" they've climbed.
     // We use Math.floor and (int) to make sure we only count full 500-peso brackets.
-    int brackeCount = (int) Math.floor(excessOverBase / bracketStep);
+    int bracketCount = (int) Math.floor(excessOverBase / bracketStep);
     
     // We start at the base (157.50) and add 22.50 for every step earned.
     double totalContribution = baseContribution + (bracketCount * incrementPerStep);
@@ -763,7 +763,7 @@ public static void main(String[] args) {
     System.out.println("      MOTORPH PAYROLL SYSTEM       ");
     System.out.println("===================================");
 
-    // This displays user login field.
+    // This displays the user login fields.
     System.out.print("Enter username: ");
     String userEntry = inputScanner.nextLine().trim();
     System.out.print("Enter password: ");
@@ -813,7 +813,7 @@ The data files are in CSV format and must be placed inside the Resources folder.
 
 ## Project Plan
 
-The team have had many challenges in aligning their schedules and learning paces together, but remained as one to meet the MotorPH's project deadline. Below is the latest project plan of the team, updated as of March 05, 2022.
+The team has had many challenges in aligning their schedules and learning paces together, but remained as one to meet the MotorPH's project deadline. Below is the latest project plan of the team, updated as of March 22, 2026.
 
 Project Plan link: https://docs.google.com/spreadsheets/d/1Lux9k8_aYuvp0zqG6S2VvVciuUxU-RZNWELsfzmeJYs/edit?usp=drive_link
 
